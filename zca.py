@@ -9,6 +9,48 @@ cf https://github.com/mwv/zca/blob/master/zca/zca.py
 
 import numpy as np
 
+class ZCA:
+
+    def __init__(self,
+                 epsilon,
+                 doZCA):
+        self.doZCA = doZCA
+        self.epsilon = epsilon
+        self.T = None
+        self.invT = None
+
+
+    def fit(self, X):
+        """
+        compute [PZ]CA transform matrix and inverse transform matrix for X
+        :param X: 2-d feature matrix: nb_samples x dim_features
+        :return:
+        first argument: transform matrix
+        second argument: inverse transform matrix
+        """
+        X_ = X - np.mean(X, axis=0)
+        cov = np.dot(X_.T, X_) / (X_.shape[0]-1)
+        U, D, _ = np.linalg.svd(cov, full_matrices=True, compute_uv=True)
+
+        # D.clip(1e-6)
+        if self.doZCA:
+            print 'INFO: ZCA whitening'
+            self.T = np.dot(np.dot(U, np.diag(1./np.sqrt(D + self.epsilon))), U.T)
+            self.invT = np.dot(np.dot(U, np.diag(np.sqrt(D + self.epsilon))), U.T)
+        else:
+            # PCA whitening
+            print 'INFO: PCA whitening'
+            self.T = np.dot(np.diag(1. / np.sqrt(D + self.epsilon)), U.T)
+            self.invT = np.dot(U, np.diag(np.sqrt(D + self.epsilon)))
+        return self.T, self.invT
+
+    def transform(self, X):
+        X_ = X - np.mean(X, axis=0)
+        return np.dot(X_, self.T)
+
+    def inverse_transform(self, X, X_mean):
+        return np.dot(X, self.invT) + X_mean
+
 
 def standardize(X):
     """
@@ -18,34 +60,6 @@ def standardize(X):
     """
     return (X-np.mean(X, axis=0))/np.sqrt(np.var(X, axis=0)+1e-10)
 
-def whitening_fit(X, epsilon=0.01, doZCA=True):
-    """
-    whiten X
-    :param X: 2-d feature matrix: nb_samples x dim_features 
-    :param eps: 
-    :return: 
-    first argument: transform matrix
-    second argument: inverse transform matrix
-    """
-    X_ = X - np.mean(X, axis=0)
-    cov = np.dot(X_.T, X_) / (X_.shape[0]-1)
-    U, D, _ = np.linalg.svd(cov, full_matrices=True, compute_uv=True)
-
-    # D.clip(1e-6)
-    if doZCA:
-        return np.dot(np.dot(U, np.diag(1./np.sqrt(D + epsilon))), U.T), np.dot(
-            np.dot(U, np.diag(np.sqrt(D+epsilon))), U.T)
-    else: # PCA
-        return np.dot(np.diag(1. / np.sqrt(D + epsilon)), U.T), np.dot(
-            U, np.diag(np.sqrt(D + epsilon)))
-
-def transform(X, T):
-    X_ = X - np.mean(X, axis=0)
-    return np.dot(X_, T)
-
-
-def inverse_transform(X, X_mean, Tinv):
-    return np.dot(X, Tinv) + X_mean
 
 
 

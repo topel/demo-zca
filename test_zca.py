@@ -42,8 +42,9 @@ def plot_all(points, zca_projections, pca_projections):
     # all but bottom plot.
     f.subplots_adjust(hspace=.3)
     plt.setp([a.get_xticklabels() for a in f.axes[:-1]], visible=False)
-    plt.show()
-    # plt.savefig('comparison_pca_zca.png')
+    # plt.show()
+    # plt.pause(10)
+    plt.savefig('comparison_pca_zca.png')
 
 def generate_2d_points(nb_points, mu, sigma):
     return np.random.multivariate_normal(mu, sigma, nb_points)
@@ -73,9 +74,11 @@ print points.shape
 # plot_2d_points(points, set_range=True)
 
 # ZCA
-transform, inv_transform = zca.whitening_fit(points, epsilon=0.0)
 
-zca_projections = zca.transform(points, transform)
+ZCA_ = zca.ZCA(epsilon=0.0, doZCA=True)
+
+ZCA_.fit(points)
+zca_projections = ZCA_.transform(points)
 
 print zca_projections.shape
 
@@ -86,29 +89,31 @@ print np.cov(zca_projections.T)
 
 
 # PCA
-transform, inv_transform = zca.whitening_fit(points, epsilon=0.0, doZCA=False)
+# transform, inv_transform = zca.whitening_fit(points, epsilon=0.0, doZCA=False)
 
-pca_projections = zca.transform(points, transform)
+PCA_ = zca.ZCA(epsilon=0.0, doZCA=False)
+PCA_.fit(points)
+pca_projections = PCA_.transform(points)
 
-# print pca_projections.shape
+print pca_projections.shape
 
-# print np.mean(pca_projections, axis=0)
-# print np.cov(pca_projections.T)
+print np.mean(pca_projections, axis=0)
+print np.cov(pca_projections.T)
 
-# plot_all(points, zca_projections, pca_projections)
+plot_all(points, zca_projections, pca_projections)
 
-from sklearn.decomposition import PCA
-
-pca = PCA(n_components=2, svd_solver='full', whiten=True)
-pca.fit(points)
-
-print 'compos:', pca.components_
-print 'var explained:', pca.explained_variance_ratio_
-
-pca_projections_scikit = pca.transform(points)
-# print np.cov(pca_projections_scikit.T)
-
-plot_all(points, zca_projections, pca_projections_scikit)
+# from sklearn.decomposition import PCA
+#
+# pca = PCA(n_components=2, svd_solver='full', whiten=True)
+# pca.fit(points)
+#
+# print 'compos:', pca.components_
+# print 'var explained:', pca.explained_variance_ratio_
+#
+# pca_projections_scikit = pca.transform(points)
+# # print np.cov(pca_projections_scikit.T)
+#
+# plot_all(points, zca_projections, pca_projections_scikit)
 
 
 # [ -1.15463195e-16  -6.88338275e-17]
